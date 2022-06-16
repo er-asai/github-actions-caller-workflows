@@ -105,15 +105,11 @@ jobs:
 
           echo -e "[Snyk Container Test]\n\n" | tee -a ${MESSAGE_FILE_NAME}
 
-          echo -e "```\n" | tee -a ${MESSAGE_FILE_NAME}
-          
           cat snyk_test_result > ${MESSAGE_FILE_NAME}
           
           : # Snykのテスト結果がカラー表示されるため、そのままプルリクエストにコメントすると文字化けのようになる。
           : # sedでカラーを取り除く。
           sed -i -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" ${MESSAGE_FILE_NAME}
-
-          echo -e "```\n" | tee -a ${MESSAGE_FILE_NAME}
 
           gh pr comment -F ./${MESSAGE_FILE_NAME} "${URL}"
         env:
