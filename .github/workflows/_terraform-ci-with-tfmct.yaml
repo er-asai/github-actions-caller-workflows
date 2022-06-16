@@ -64,7 +64,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  tf-pr:
+  terraform-ci:
     runs-on: ubuntu-latest
 
     defaults:
