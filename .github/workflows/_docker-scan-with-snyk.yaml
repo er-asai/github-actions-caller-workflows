@@ -1,0 +1,121 @@
+name: docker scan with snyk
+on:
+  workflow_call:
+    inputs:
+      docker-dir:
+        description: Dockerfileが格納されているディレクトリ
+        type: string
+        required: true
+      docker-file-name:
+        description: Dockerfile名
+        type: string
+        default: Dockerfile
+        required: false
+      docker-role:
+        description: 実行するDockerコンテナの役割 ex.) bastion, app, db
+        type: string
+        required: true
+      docker-tag:
+        description: Docker Tag
+        type: string
+        required: true
+      github-repository:
+        description: GitHub Repository
+        type: string
+        required: true
+      github-ref:
+        description: GitHub Ref
+        type: string
+        required: true
+      github-pull-request-html-url:
+        description: GitHub Pull Request HTML URL
+        type: string
+        required: true
+      snyk-org:
+        description: Snyk Org
+        type: string
+        required: true
+    secrets:
+      snyk-token:
+        description: Snykトークン
+        required: true
+      github-token:
+        description: GitHubトークン
+        required: true
+
+jobs:
+  docker-scan:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ inputs.docker-dir }}
+
+    steps:
+      - name: clone repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Buildx Cache
+        id: buildx-cache
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ inputs.github-ref }}-buildx-${{ inputs.docker-tag }}
+          restore-keys: |
+            ${{ inputs.github-ref }}-${{ inputs.docker-tag }}
+            ${{ inputs.github-ref }}
+            refs/head/master
+
+      - name: Docker Build
+        id: docker-build
+        uses: docker/build-push-action@v3
+        with:
+          context: ${{ inputs.docker-dir }}
+          file: ${{ inputs.docker-dir }}/${{ inputs.docker-file-name }}
+          builder: ${{ steps.buildx.outputs.name }}
+          push: false
+          tags: ${{ inputs.github-repository }}/${{ inputs.docker-role }}:${{ inputs.docker-tag }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max # mode=max により中間レイヤーもキャッシュする
+          load: true # docker images に イメージをロードするために必要
+
+      - name: Snyk Setup
+        id: snyk
+        uses: snyk/actions/setup@master
+
+      - name: Snyk Container Test
+        id: snyk-container-test
+        run: |
+          snyk container test ${{ inputs.github-repository }}/${{ inputs.docker-role }}:${{ inputs.docker-tag }} \
+            --file=${{ inputs.docker-file-name }} \
+            --app-vulns \
+            --org=${{ inputs.snyk-org }} \
+            --project-name=${{ inputs.github-repository }}/${{ inputs.docker-role }} 2>&1 | tee -a snyk_test_result          
+        env:
+          SNYK_TOKEN: ${{ secrets.snyk-token }}
+
+      - name: GitHub PR Comments
+        id: github-pr-comments
+        run: |
+          MESSAGE_FILE_NAME=pull_request_comment_message
+
+          echo -e "[Snyk Container Test]\n\n" | tee -a ${MESSAGE_FILE_NAME}
+
+          echo -e "```\n" | tee -a ${MESSAGE_FILE_NAME}
+          
+          cat snyk_test_result > ${MESSAGE_FILE_NAME}
+          
+          : # Snykのテスト結果がカラー表示されるため、そのままプルリクエストにコメントすると文字化けのようになる。
+          : # sedでカラーを取り除く。
+          sed -i -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" ${MESSAGE_FILE_NAME}
+
+          echo -e "```\n" | tee -a ${MESSAGE_FILE_NAME}
+
+          gh pr comment -F ./${MESSAGE_FILE_NAME} "${URL}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}
+          URL: ${{ inputs.github-pull-request-html-url }}
