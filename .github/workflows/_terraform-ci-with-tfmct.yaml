@@ -1,0 +1,208 @@
+name: terraform ci with tfcmt
+on:
+  workflow_call:
+    inputs:
+      aws-region:
+        description: AWSのリージョン名
+        type: string
+        default: ap-northeast-1
+        required: false
+      terraform-root-dir:
+        description: Terraformコードが格納されているルートディレクトリ
+        type: string
+        required: true
+      terraform-init-dir:
+        description: terraform init を実行するディレクトリ
+        type: string
+        required: true
+      terraform-init-option:
+        description: terraform init のオプションを指定
+        type: string
+        default: off
+        required: false
+      terraform-workspace-name:
+        description: terraform workspace名
+        type: string
+        default: default
+        required: false
+      terraform-plan-option:
+        description: terraform plan のオプションを指定
+        type: string
+        default: off
+        required: false
+      terraform-version:
+        description: terraformの実行バージョン
+        type: string
+        default: 1.1.9
+        required: false
+      tflint-version:
+        description: tflintの実行バージョン
+        type: string
+        default: 0.36.3
+        required: false
+      tfcmt-version:
+        description: tfcmtの実行バージョン
+        type: string
+        default: 3.2.2
+        required: false
+      reviewdog-version:
+        description: reviewdogの実行バージョン
+        type: string
+        default: 0.14.1
+        required: false
+    secrets:
+      aws-assume-role-arn:
+        description: role to assume
+        required: true
+      github-token:
+        description: GitHubトークン
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform-ci:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - name: clone repository
+        uses: actions/checkout@v3
+
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ inputs.terraform-version }}
+
+      - name: setup reviewdog
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: v${{ inputs.reviewdog-version }}
+
+      - name: setup tflint
+        uses: terraform-linters/setup-tflint@v1
+        with:
+          tflint_version: v${{ inputs.tflint-version }}
+
+      - name: setup tfcmt
+        run: |
+          wget https://github.com/suzuki-shunsuke/tfcmt/releases/download/v${{ inputs.tfcmt-version }}/tfcmt_linux_amd64.tar.gz
+          tar -zxvf tfcmt_linux_amd64.tar.gz
+          chmod +x ./tfcmt
+          sudo mv ./tfcmt /usr/local/bin/tfcmt
+          tfcmt -v
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.aws-assume-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: terraform fmt
+        id: fmt
+        run: terraform fmt -recursive -diff=true -check=true 2>&1 | tee -a terraform_fmt_result
+        continue-on-error: true
+
+      - name: Terraform fmt PR Comments
+        id: tf-fmt-pr-comments
+        run: |
+          MESSAGE_FILE_NAME=pull_request_comment_message
+
+          echo -e "[Terraform fmt]\n\n" | tee ${MESSAGE_FILE_NAME}
+
+          cat terraform_fmt_result >> ${MESSAGE_FILE_NAME}
+
+          echo -e "\n\nTerraform fmt Finished." | tee -a ${MESSAGE_FILE_NAME}
+          
+          gh pr comment -F ./${MESSAGE_FILE_NAME} "${URL}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}
+          URL: ${{ inputs.github-pull-request-html-url }}
+
+      - name: terraform init
+        id: init
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ ${{ inputs.terraform-init-option }} = "off" ]; then
+            terraform init
+          else
+            terraform init ${{ inputs.terraform-init-option }}
+          fi
+
+      - name: terraform workspace
+        id: workspace
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: terraform workspace select ${{ inputs.terraform-workspace-name }} || terraform workspace new ${{ inputs.terraform-workspace-name }}
+
+      - name: terraform validate
+        id: validate
+        run: |
+          TERRAFORM_DIR=${{ inputs.terraform-root-dir }}
+          TERRAFORM_VALIDATE_RESULT_FILE_NAME="terraform_validate_result"
+
+          : #pwdを参照する度に毎回結果が変わるので、別途スクリプト実行開始時点のディレクトリ位置を記録しておく。
+          pwd=$(pwd)
+          PWD=${pwd} 
+
+          exit_code=0
+          
+          for terraform_dirs in $(find ${TERRAFORM_DIR} -type d | grep -v ".terraform" | grep -v "module"); do
+            echo -e "Directory: ${pwd}/${terraform_dirs} \n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE_NAME}
+            cd "${pwd}/${terraform_dirs}"
+            terraform_validate_result=$(terraform validate -no-color)
+            terraform_code="$?"
+            
+            test "$terraform_code" != "0" && {
+              echo -e "${terraform_validate_result} \n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE_NAME}
+              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them\n"  | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE_NAME}
+              exit_code=1
+            }
+          
+            cd ${PWD}
+          done
+          
+          exit $exit_code
+        continue-on-error: true
+
+      - name: Terraform validate PR Comments
+        id: tf-validate-pr-comments
+        run: |
+          MESSAGE_FILE_NAME=pull_request_comment_message
+
+          echo -e "[Terraform Validate]\n\n" | tee ${MESSAGE_FILE_NAME}
+
+          cat terraform_validate_result >> ${MESSAGE_FILE_NAME}
+
+          echo -e "\n\nTerraform validate Finished." | tee -a ${MESSAGE_FILE_NAME}
+          
+          gh pr comment -F ./${MESSAGE_FILE_NAME} "${URL}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}
+          URL: ${{ inputs.github-pull-request-html-url }}
+
+      - name: terraform lint with reviewdog
+        id: tflint
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          tflint --format=checkstyle --module . \
+          | reviewdog -f=checkstyle -name="tflint" -reporter="github-pr-review" -level="error" -fail-on-error="false" -filter-mode="nofilter"
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.github-token }}
+
+      - name: terraform plan with tfcmt
+        id: plan
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ ${{ inputs.terraform-plan-option }} = "off" ]; then
+            tfcmt plan -- terraform plan
+          else
+            tfcmt plan -- terraform plan ${{ inputs.terraform-plan-option }}
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}

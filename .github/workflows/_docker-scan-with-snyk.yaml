@@ -97,6 +97,7 @@ jobs:
             --project-name=${{ inputs.github-repository }}/${{ inputs.docker-role }} 2>&1 | tee -a snyk_test_result          
         env:
           SNYK_TOKEN: ${{ secrets.snyk-token }}
+        continue-on-error: true
 
       - name: GitHub PR Comments
         id: github-pr-comments
@@ -105,7 +106,7 @@ jobs:
 
           echo -e "[Snyk Container Test]\n\n" | tee -a ${MESSAGE_FILE_NAME}
 
-          cat snyk_test_result > ${MESSAGE_FILE_NAME}
+          cat snyk_test_result >> ${MESSAGE_FILE_NAME}
           
           : # Snykのテスト結果がカラー表示されるため、そのままプルリクエストにコメントすると文字化けのようになる。
           : # sedでカラーを取り除く。
