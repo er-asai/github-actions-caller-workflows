@@ -50,6 +50,11 @@ on:
         type: string
         default: 0.14.1
         required: false
+      git-checkout-ref:
+        description: リポジトリをチェックアウトするときのブランチ、タグもしくはSHA
+        type: string
+        default: ""
+        required: false
       github-pull-request-html-url:
         description:  GitHub Pull Request HTML URL
         type: string
@@ -78,6 +83,13 @@ jobs:
     steps:
       - name: clone repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - if: ${{ inputs.git-checkout-ref != '' }} # <= ref が指定されていたら git checkout する
+        name: git checkout
+        id: checkout
+        run: git checkout ${{ inputs.git-checkout-ref }}
 
       - name: setup terraform
         uses: hashicorp/setup-terraform@v2

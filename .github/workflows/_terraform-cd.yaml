@@ -1,0 +1,121 @@
+name: terraform cd
+on:
+  workflow_call:
+    inputs:
+      aws-region:
+        description: AWSのリージョン名
+        type: string
+        default: ap-northeast-1
+        required: false
+      terraform-root-dir:
+        description: Terraformコードが格納されているルートディレクトリ
+        type: string
+        required: true
+      terraform-init-dir:
+        description: terraform init を実行するディレクトリ
+        type: string
+        required: true
+      terraform-init-option:
+        description: terraform init のオプションを指定
+        type: string
+        default: off
+        required: false
+      terraform-workspace-name:
+        description: terraform workspace名
+        type: string
+        default: default
+        required: false
+      terraform-plan-option:
+        description: terraform plan のオプションを指定
+        type: string
+        default: off
+        required: false
+      terraform-apply-option:
+        description: terraform apply のオプションを指定
+        type: string
+        default: off
+        required: false
+      terraform-version:
+        description: terraformの実行バージョン
+        type: string
+        default: 1.1.9
+        required: false
+      git-checkout-ref:
+        description: リポジトリをチェックアウトするときのブランチ、タグもしくはSHA
+        type: string
+        default: ""
+        required: false
+    secrets:
+      aws-assume-role-arn:
+        description: role to assume
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform-cd:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - name: clone repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - if: ${{ inputs.git-checkout-ref != '' }} # <= ref が指定されていたら git checkout する
+        name: git checkout
+        id: checkout
+        run: git checkout ${{ inputs.git-checkout-ref }}
+
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ inputs.terraform-version }}
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.aws-assume-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: terraform init
+        id: init
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ ${{ inputs.terraform-init-option }} = "off" ]; then
+            terraform init
+          else
+            terraform init ${{ inputs.terraform-init-option }}
+          fi
+
+      - name: terraform workspace
+        id: workspace
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: terraform workspace select ${{ inputs.terraform-workspace-name }} || terraform workspace new ${{ inputs.terraform-workspace-name }}
+
+      - name: terraform plan
+        id: plan
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ ${{ inputs.terraform-plan-option }} = "off" ]; then
+            terraform plan
+          else
+            terraform plan ${{ inputs.terraform-plan-option }}
+          fi
+
+      - name: terraform apply
+        id: apply
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ ${{ inputs.terraform-apply-option }} = "off" ]; then
+            terraform apply
+          else
+            terraform apply ${{ inputs.terraform-apply-option }}
+          fi
+
