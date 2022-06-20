@@ -50,6 +50,10 @@ on:
         type: string
         default: 0.14.1
         required: false
+      github-pull-request-html-url:
+        description:  GitHub Pull Request HTML URL
+        type: string
+        required: true
     secrets:
       aws-assume-role-arn:
         description: role to assume
