@@ -1,0 +1,93 @@
+name: docker push
+on:
+  workflow_call:
+    inputs:
+      docker-dir:
+        description: Dockerfileが格納されているディレクトリ
+        type: string
+        required: true
+      docker-file-name:
+        description: Dockerfile名
+        type: string
+        default: Dockerfile
+        required: false
+      docker-tag:
+        description: Docker Tag
+        type: string
+        required: true
+      container-registry:
+        description: Container Registry URI
+        type: string
+        required: true
+      container-repository:
+        description: Container Repository
+        type: string
+        required: true
+      github-ref:
+        description: GitHub Ref
+        type: string
+        required: true
+      aws-region:
+        description: AWSのリージョン名
+        type: string
+        default: ap-northeast-1
+        required: false
+    secrets: # secretが設定されてない場合は、空文字となる。
+      aws-assume-role-arn:
+        description: role to assume
+        required: false
+
+jobs:
+  docker-push:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ inputs.docker-dir }}
+
+    # secretsの値は直接if条件に指摘できないため、環境変数にいったん入れる。
+    # https://docs.github.com/ja/actions/using-workflows/workflow-syntax-for-github-actions#example-using-secrets
+    env:
+      aws_assume_role_arn: ${{ secrets.aws-assume-role-arn }}
+
+    steps:
+      - name: clone repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Buildx Cache
+        id: buildx-cache
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ inputs.github-ref }}-buildx-${{ inputs.docker-tag }}
+          restore-keys: |
+            ${{ inputs.github-ref }}-${{ inputs.docker-tag }}
+            ${{ inputs.github-ref }}
+            refs/head/master
+
+      - if: ${{ env.aws_assume_role_arn != '' }} # secretsにAWSのAssumeRoleが設定されていたら実行
+        name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.aws-assume-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - uses: docker/login-action@v2
+        with:
+          registry: ${{ inputs.container-registry }}
+
+      - name: Docker Build and Push
+        id: docker-build-and-push
+        uses: docker/build-push-action@v3
+        with:
+          context: ${{ inputs.docker-dir }}
+          file: ${{ inputs.docker-dir }}/${{ inputs.docker-file-name }}
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          tags: ${{ inputs.container-registry }}/${{ inputs.container-repository }}:${{ inputs.docker-tag }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max # mode=max により中間レイヤーもキャッシュする
