@@ -73,7 +73,7 @@ jobs:
         name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          role-to-assume: ${{ secrets.aws-assume-role-arn }}
+          role-to-assume: ${{ env.aws_assume_role_arn }}
           aws-region: ${{ inputs.aws-region }}
 
       - uses: docker/login-action@v2
