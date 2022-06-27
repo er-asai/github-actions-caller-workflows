@@ -1,0 +1,30 @@
+name: github pull request comments
+on:
+  workflow_call:
+    inputs:
+      github-pull-request-comments:
+        description: GitHubプルリクエストに書き込むコメント
+        type: string
+        required: true
+      github-pull-request-html-url:
+        description: GitHub Pull Request HTML URL
+        type: string
+        required: true
+    secrets:
+      github-token:
+        description: GitHubトークン
+        required: true
+
+jobs:
+  docker-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub PR Comments
+        id: github-pr-comments
+        run: |
+          MESSAGE_FILE_NAME=pull_request_comment_message
+          cat ${{ inputs.github-pull-request-comments }} >> ${MESSAGE_FILE_NAME}
+          gh pr comment -F ./${MESSAGE_FILE_NAME} "${URL}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}
+          URL: ${{ inputs.github-pull-request-html-url }}
