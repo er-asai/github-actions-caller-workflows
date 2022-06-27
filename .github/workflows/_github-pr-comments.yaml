@@ -23,7 +23,7 @@ jobs:
         id: github-pr-comments
         run: |
           MESSAGE_FILE_NAME=pull_request_comment_message
-          cat ${{ inputs.github-pull-request-comments }} >> ${MESSAGE_FILE_NAME}
+          echo -e ${{ inputs.github-pull-request-comments }} >> ${MESSAGE_FILE_NAME}
           gh pr comment -F ./${MESSAGE_FILE_NAME} "${URL}"
         env:
           GITHUB_TOKEN: ${{ secrets.github-token }}
