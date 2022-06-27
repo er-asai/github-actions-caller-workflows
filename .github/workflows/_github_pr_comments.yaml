@@ -16,7 +16,7 @@ on:
         required: true
 
 jobs:
-  docker-scan:
+  github-pr-comments:
     runs-on: ubuntu-latest
     steps:
       - name: GitHub PR Comments
