@@ -19,6 +19,21 @@ on:
         description: Docker Tag
         type: string
         required: true
+      docker-build-args-option:
+        description: build-args のオプションを指定
+        type: string
+        default: off
+        required: false
+      container-registry:
+        description: Container Registry URI
+        type: string
+        default: off
+        required: false
+      aws-region:
+        description: AWSのリージョン名
+        type: string
+        default: ap-northeast-1
+        required: false
       github-repository:
         description: GitHub Repository
         type: string
@@ -35,7 +50,10 @@ on:
         description: Snyk Org
         type: string
         required: true
-    secrets:
+    secrets: # secretが設定されてない場合は、空文字となる。
+      aws-assume-role-arn:
+        description: role to assume
+        required: false
       snyk-token:
         description: Snykトークン
         required: true
@@ -50,6 +68,11 @@ jobs:
     defaults:
       run:
         working-directory: ${{ inputs.docker-dir }}
+
+    # secretsの値は直接if条件に指摘できないため、環境変数にいったん入れる。
+    # https://docs.github.com/ja/actions/using-workflows/workflow-syntax-for-github-actions#example-using-secrets
+    env:
+      aws_assume_role_arn: ${{ secrets.aws-assume-role-arn }}
 
     steps:
       - name: clone repository
@@ -70,13 +93,41 @@ jobs:
             ${{ inputs.github-ref }}
             refs/head/master
 
-      - name: Docker Build
+      - if: ${{ env.aws_assume_role_arn != '' }} # secretsにAWSのAssumeRoleが設定されていたら実行
+        name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.aws-assume-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - if:  ${{ inputs.container-registry != 'off' }} # container-registryが設定されていたら実行
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ inputs.container-registry }}
+
+      - if: ${{ inputs.docker-build-args-option == 'off' }} # build-args-optionが設定されていなかったら実行
+        name: Docker Build
         id: docker-build
         uses: docker/build-push-action@v3
         with:
           context: ${{ inputs.docker-dir }}
           file: ${{ inputs.docker-dir }}/${{ inputs.docker-file-name }}
           builder: ${{ steps.buildx.outputs.name }}
+          push: false
+          tags: ${{ inputs.github-repository }}/${{ inputs.docker-role }}:${{ inputs.docker-tag }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max # mode=max により中間レイヤーもキャッシュする
+          load: true # docker images に イメージをロードするために必要
+
+      - if: ${{ inputs.docker-build-args-option != 'off' }} # build-args-optionが設定されていたら実行
+        name: Docker Build Args Option
+        id: docker-build-args-option
+        uses: docker/build-push-action@v3
+        with:
+          context: ${{ inputs.docker-dir }}
+          file: ${{ inputs.docker-dir }}/${{ inputs.docker-file-name }}
+          builder: ${{ steps.buildx.outputs.name }}
+          build-args: ${{ inputs.docker-build-args-option }}
           push: false
           tags: ${{ inputs.github-repository }}/${{ inputs.docker-role }}:${{ inputs.docker-tag }}
           cache-from: type=local,src=/tmp/.buildx-cache
