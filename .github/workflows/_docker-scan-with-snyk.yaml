@@ -61,6 +61,11 @@ on:
         description: GitHubトークン
         required: true
 
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
 jobs:
   docker-scan:
     runs-on: ubuntu-latest
