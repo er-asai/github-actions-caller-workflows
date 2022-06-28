@@ -15,6 +15,11 @@ on:
         description: Docker Tag
         type: string
         required: true
+      docker-build-args-option:
+        description: build-args のオプションを指定
+        type: string
+        default: off
+        required: false
       container-registry:
         description: Container Registry URI
         type: string
@@ -84,13 +89,28 @@ jobs:
         with:
           registry: ${{ inputs.container-registry }}
 
-      - name: Docker Build and Push
+      - if: ${{ inputs.docker-build-args-option == 'off' }} # build-args-optionが設定されていなかったら実行
+        name: Docker Build and Push
         id: docker-build-and-push
         uses: docker/build-push-action@v3
         with:
           context: ${{ inputs.docker-dir }}
           file: ${{ inputs.docker-dir }}/${{ inputs.docker-file-name }}
           builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          tags: ${{ inputs.container-registry }}/${{ inputs.container-repository }}:${{ inputs.docker-tag }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max # mode=max により中間レイヤーもキャッシュする
+
+      - if: ${{ inputs.docker-build-args-option != 'off' }} # build-args-optionが設定されていたら実行
+        name: Docker Build and Push Args Option
+        id: docker-build-and-push-args-option
+        uses: docker/build-push-action@v3
+        with:
+          context: ${{ inputs.docker-dir }}
+          file: ${{ inputs.docker-dir }}/${{ inputs.docker-file-name }}
+          builder: ${{ steps.buildx.outputs.name }}
+          build-args: ${{ inputs.docker-build-args-option }}
           push: true
           tags: ${{ inputs.container-registry }}/${{ inputs.container-repository }}:${{ inputs.docker-tag }}
           cache-from: type=local,src=/tmp/.buildx-cache
