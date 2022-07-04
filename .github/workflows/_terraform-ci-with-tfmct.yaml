@@ -128,19 +128,19 @@ jobs:
       - name: Terraform fmt PR Comments
         id: tf-fmt-pr-comments
         run: |
-          MESSAGE_FILE_NAME=pull_request_comment_message
+          MESSAGE_FILE=pull_request_comment_message
 
-          echo -e "[Terraform fmt]\n\n" | tee ${MESSAGE_FILE_NAME}
+          echo -e "[Terraform fmt]\n\n" | tee ${MESSAGE_FILE}
 
-          cat terraform_fmt_result >> ${MESSAGE_FILE_NAME}
+          cat terraform_fmt_result | tee -a ${MESSAGE_FILE}
 
-          echo -e "\n\nTerraform fmt Finished." | tee -a ${MESSAGE_FILE_NAME}
+          echo -e "\n\nTerraform fmt Finished." | tee -a ${MESSAGE_FILE}
 
           : # Terraform fmtのテスト結果がカラー表示されるため、そのままプルリクエストにコメントすると文字化けのようになる。
           : # sedでカラーを取り除く。
-          sed -i -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" ${MESSAGE_FILE_NAME}
+          sed -i -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" ${MESSAGE_FILE}
           
-          gh pr comment -F ./${MESSAGE_FILE_NAME} "${URL}"
+          gh pr comment -F ./${MESSAGE_FILE} "${URL}"
         env:
           GITHUB_TOKEN: ${{ secrets.github-token }}
           URL: ${{ inputs.github-pull-request-html-url }}
@@ -194,15 +194,15 @@ jobs:
       - name: Terraform validate PR Comments
         id: tf-validate-pr-comments
         run: |
-          MESSAGE_FILE_NAME=pull_request_comment_message
+          MESSAGE_FILE=pull_request_comment_message
 
-          echo -e "[Terraform Validate]\n\n" | tee ${MESSAGE_FILE_NAME}
+          echo -e "[Terraform Validate]\n\n" | tee ${MESSAGE_FILE}
 
-          cat terraform_validate_result >> ${MESSAGE_FILE_NAME}
+          cat terraform_validate_result | tee -a ${MESSAGE_FILE}
 
-          echo -e "\n\nTerraform validate Finished." | tee -a ${MESSAGE_FILE_NAME}
+          echo -e "\n\nTerraform validate Finished." | tee -a ${MESSAGE_FILE}
           
-          gh pr comment -F ./${MESSAGE_FILE_NAME} "${URL}"
+          gh pr comment -F ./${MESSAGE_FILE} "${URL}"
         env:
           GITHUB_TOKEN: ${{ secrets.github-token }}
           URL: ${{ inputs.github-pull-request-html-url }}
