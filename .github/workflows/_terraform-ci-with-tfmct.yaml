@@ -163,38 +163,38 @@ jobs:
       - name: terraform validate
         id: validate
         run: |
-          TERRAFORM_DIR=${{ inputs.terraform-root-dir }}
-          TERRAFORM_VALIDATE_RESULT_FILE=terraform_validate_result
+          cat <<<EOF > tf_validate.sh
+          TERRAFORM_DIR=$1
 
-          : #pwdを参照する度に毎回結果が変わるので、別途スクリプト実行開始時点のディレクトリ位置を記録しておく。
+          #pwdを参照する度に毎回結果が変わるので、別途スクリプト実行開始時点のディレクトリ位置を記録しておく。
           pwd=$(pwd)
           PWD=${pwd} 
 
           exit_code=0
           
-          stdbuf -i0 -o0 -e0 echo -e "" | tee ${TERRAFORM_VALIDATE_RESULT_FILE}
-          
           for terraform_dirs in $(find ${TERRAFORM_DIR} -type d | grep -v "${TERRAFORM_DIR}/.terraform" | grep -v "module"); do
             cd "${pwd}/${terraform_dirs}"
-            stdbuf -i0 -o0 -e0 echo -e "Checked Directory: ${pwd}/${terraform_dirs} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+            echo -e "Checked Directory: ${pwd}/${terraform_dirs}"
             
             terraform_validate_result=$(terraform validate -no-color)
-            stdbuf -i0 -o0 -e0 echo -e "${terraform_validate_result} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+            echo -e "${terraform_validate_result}"
             terraform_code="$?"
             
             test "$terraform_code" != "0" && {
-              stdbuf -i0 -o0 -e0 echo -e "${terraform_validate_result} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}             
-              stdbuf -i0 -o0 -e0 echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them\n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+              echo -e "${terraform_validate_result}"
+              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them"
               exit_code=1
             }
           
             cd ${PWD}            
           done
           
-          stdbuf -i0 -o0 -e0 echo -e "exit_code=${exit_code} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
-          
-          cat ${TERRAFORM_VALIDATE_RESULT_FILE}
+          echo -e "exit_code=${exit_code}"          
           exit $exit_code
+          EOF
+          
+          cat tf_validate.sh
+          /bin/bash tf_validate.sh ${{ inputs.terraform-root-dir }} > terraform_validate_result
         continue-on-error: true
 
       - name: Terraform validate PR Comments
