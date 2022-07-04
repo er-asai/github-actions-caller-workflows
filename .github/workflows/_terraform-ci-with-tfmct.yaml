@@ -191,7 +191,6 @@ jobs:
           done
           
           echo -e "exit_code=${exit_code}" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
-          exit $exit_code
         continue-on-error: true
 
       - name: Terraform validate PR Comments
