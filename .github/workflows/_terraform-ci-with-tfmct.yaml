@@ -190,6 +190,7 @@ jobs:
           done
           
           echo -e "exit_code=${exit_code} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+          cat ${TERRAFORM_VALIDATE_RESULT_FILE}
           exit $exit_code
         continue-on-error: true
 
