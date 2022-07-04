@@ -172,7 +172,7 @@ jobs:
 
           exit_code=0
           
-          echo -e "" | tee ${TERRAFORM_VALIDATE_RESULT_FILE}
+          echo -e "aaaa" | tee ${TERRAFORM_VALIDATE_RESULT_FILE}
           
           for terraform_dirs in $(find ${TERRAFORM_DIR} -type d | grep -v "${TERRAFORM_DIR}/.terraform" | grep -v "module"); do
             cd "${pwd}/${terraform_dirs}"
@@ -191,6 +191,7 @@ jobs:
           done
           
           echo -e "exit_code=${exit_code}" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+          echo -e "bbbb" | tee ${TERRAFORM_VALIDATE_RESULT_FILE}
         continue-on-error: true
 
       - name: Terraform validate PR Comments
