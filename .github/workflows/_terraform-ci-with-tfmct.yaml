@@ -157,7 +157,7 @@ jobs:
 
       - name: terraform workspace
         id: workspace
-        working-directory: ${{ inputs.terraform-init-dir }}
+        working-directory: ${{ inputs.terraform-root-dir }}
         run: terraform workspace select ${{ inputs.terraform-workspace-name }} || terraform workspace new ${{ inputs.terraform-workspace-name }}
 
       - name: terraform validate
@@ -193,7 +193,7 @@ jobs:
           exit $exit_code
           EOF
           
-          cat tf_validate.sh
+          ls -la ./tf_validate.sh
           /bin/bash tf_validate.sh ${{ inputs.terraform-root-dir }} > terraform_validate_result
         continue-on-error: true
 
