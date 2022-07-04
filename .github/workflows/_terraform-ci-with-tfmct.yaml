@@ -172,6 +172,8 @@ jobs:
 
           exit_code=0
           
+          echo -e "" | tee ${TERRAFORM_VALIDATE_RESULT_FILE}
+          
           for terraform_dirs in $(find ${TERRAFORM_DIR} -type d | grep -v "${TERRAFORM_DIR}/.terraform" | grep -v "module"); do
             echo -e "Checked Directory: ${pwd}/${terraform_dirs} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
             cd "${pwd}/${terraform_dirs}"
