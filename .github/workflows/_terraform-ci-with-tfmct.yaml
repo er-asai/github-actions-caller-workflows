@@ -172,26 +172,26 @@ jobs:
 
           exit_code=0
           
-          echo -e "aaaa" | tee ${TERRAFORM_VALIDATE_RESULT_FILE}
+          echo -e "aaaa" 2>&1 | tee ${TERRAFORM_VALIDATE_RESULT_FILE}
           
           for terraform_dirs in $(find ${TERRAFORM_DIR} -type d | grep -v "${TERRAFORM_DIR}/.terraform" | grep -v "module"); do
             cd "${pwd}/${terraform_dirs}"
-            echo -e "Checked Directory: ${pwd}/${terraform_dirs}" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+            echo -e "Checked Directory: ${pwd}/${terraform_dirs}" 2>&1 | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
             
             validate_result=$(terraform validate -no-color)
-            echo -e "${validate_result}" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+            echo -e "${validate_result}" 2>&1 | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
             terraform_code="$?"
             
             test "$terraform_code" != "0" && {
-              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them" 2>&1 | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
               exit_code=1
             }
           
             cd ${PWD}            
           done
           
-          echo -e "exit_code=${exit_code}" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
-          echo -e "bbbb" | tee ${TERRAFORM_VALIDATE_RESULT_FILE}
+          echo -e "exit_code=${exit_code}" 2>&1 | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+          echo -e "bbbb" 2>&1 | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
         continue-on-error: true
 
       - name: Terraform validate PR Comments
