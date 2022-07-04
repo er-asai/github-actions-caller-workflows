@@ -168,7 +168,7 @@ jobs:
 
           exit_code=0
           
-          for terraform_dirs in $(find ${TERRAFORM_DIR} -type d | grep -v ".terraform" | grep -v "module"); do
+          for terraform_dirs in $(find ${TERRAFORM_DIR} -type d | grep -v "${TERRAFORM_DIR}/.terraform" | grep -v "module"); do
             echo -e "Directory: ${pwd}/${terraform_dirs} \n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE_NAME}
             cd "${pwd}/${terraform_dirs}"
             terraform_validate_result=$(terraform validate -no-color)
