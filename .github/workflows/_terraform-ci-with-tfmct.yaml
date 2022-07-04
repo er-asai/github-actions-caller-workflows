@@ -160,7 +160,7 @@ jobs:
         id: validate
         run: |
           TERRAFORM_DIR=${{ inputs.terraform-root-dir }}
-          TERRAFORM_VALIDATE_RESULT_FILE_NAME=terraform_validate_result
+          TERRAFORM_VALIDATE_RESULT_FILE=terraform_validate_result
 
           : #pwdを参照する度に毎回結果が変わるので、別途スクリプト実行開始時点のディレクトリ位置を記録しておく。
           pwd=$(pwd)
@@ -169,20 +169,21 @@ jobs:
           exit_code=0
           
           for terraform_dirs in $(find ${TERRAFORM_DIR} -type d | grep -v "${TERRAFORM_DIR}/.terraform" | grep -v "module"); do
-            echo -e "Directory: ${pwd}/${terraform_dirs} \n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE_NAME}
+            echo -e "Checked Directory: ${pwd}/${terraform_dirs} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
             cd "${pwd}/${terraform_dirs}"
             terraform_validate_result=$(terraform validate -no-color)
             terraform_code="$?"
             
             test "$terraform_code" != "0" && {
-              echo -e "${terraform_validate_result} \n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE_NAME}
-              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them\n"  | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE_NAME}
+              echo -e "${terraform_validate_result} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them\n\n"  | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
               exit_code=1
             }
           
             cd ${PWD}
           done
           
+          echo -e "exit_code=${exit_code} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
           exit $exit_code
         continue-on-error: true
 
