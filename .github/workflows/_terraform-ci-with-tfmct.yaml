@@ -163,38 +163,35 @@ jobs:
       - name: terraform validate
         id: validate
         run: |
-          cat <<<EOF > tf_validate.sh
-          TERRAFORM_DIR=$1
+          TERRAFORM_DIR=${{ inputs.terraform-root-dir }}
+          TERRAFORM_VALIDATE_RESULT_FILE=terraform_validate_result
 
-          #pwdを参照する度に毎回結果が変わるので、別途スクリプト実行開始時点のディレクトリ位置を記録しておく。
+          : #pwdを参照する度に毎回結果が変わるので、別途スクリプト実行開始時点のディレクトリ位置を記録しておく。
           pwd=$(pwd)
           PWD=${pwd} 
 
           exit_code=0
           
+          echo -e "" | tee ${TERRAFORM_VALIDATE_RESULT_FILE}
+          
           for terraform_dirs in $(find ${TERRAFORM_DIR} -type d | grep -v "${TERRAFORM_DIR}/.terraform" | grep -v "module"); do
             cd "${pwd}/${terraform_dirs}"
-            echo -e "Checked Directory: ${pwd}/${terraform_dirs}"
+            echo -e "Checked Directory: ${pwd}/${terraform_dirs}" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
             
-            terraform_validate_result=$(terraform validate -no-color)
-            echo -e "${terraform_validate_result}"
+            validate_result=$(terraform validate -no-color)
+            echo -e "${validate_result}" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
             terraform_code="$?"
             
             test "$terraform_code" != "0" && {
-              echo -e "${terraform_validate_result}"
-              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them"
+              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
               exit_code=1
             }
           
             cd ${PWD}            
           done
           
-          echo -e "exit_code=${exit_code}"          
+          echo -e "exit_code=${exit_code}" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
           exit $exit_code
-          EOF
-          
-          ls -la ./tf_validate.sh
-          /bin/bash tf_validate.sh ${{ inputs.terraform-root-dir }} > terraform_validate_result
         continue-on-error: true
 
       - name: Terraform validate PR Comments
