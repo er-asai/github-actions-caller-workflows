@@ -160,7 +160,7 @@ jobs:
         id: validate
         run: |
           TERRAFORM_DIR=${{ inputs.terraform-root-dir }}
-          TERRAFORM_VALIDATE_RESULT_FILE_NAME="terraform_validate_result"
+          TERRAFORM_VALIDATE_RESULT_FILE_NAME=terraform_validate_result
 
           : #pwdを参照する度に毎回結果が変わるので、別途スクリプト実行開始時点のディレクトリ位置を記録しておく。
           pwd=$(pwd)
