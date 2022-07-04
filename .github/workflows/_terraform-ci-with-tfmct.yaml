@@ -172,24 +172,32 @@ jobs:
 
           exit_code=0
           
-          echo -e "" | tee ${TERRAFORM_VALIDATE_RESULT_FILE}
+          echo -e "" > ${TERRAFORM_VALIDATE_RESULT_FILE}
           
           for terraform_dirs in $(find ${TERRAFORM_DIR} -type d | grep -v "${TERRAFORM_DIR}/.terraform" | grep -v "module"); do
-            echo -e "Checked Directory: ${pwd}/${terraform_dirs} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+            echo -e "Checked Directory: ${pwd}/${terraform_dirs} \n\n"
+            echo -e "Checked Directory: ${pwd}/${terraform_dirs} \n\n" >> ${TERRAFORM_VALIDATE_RESULT_FILE}
+            
             cd "${pwd}/${terraform_dirs}"
             terraform_validate_result=$(terraform validate -no-color)
             terraform_code="$?"
             
             test "$terraform_code" != "0" && {
-              echo -e "${terraform_validate_result} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
-              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them\n\n"  | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+              echo -e "${terraform_validate_result} \n\n"
+              echo -e "${terraform_validate_result} \n\n" >> ${TERRAFORM_VALIDATE_RESULT_FILE}
+              
+              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them\n\n"
+              echo -e "The files above have some formatting problems, you can use \`terraform fmt -recursive -diff=true\` to fix them\n\n" >> ${TERRAFORM_VALIDATE_RESULT_FILE}
+              
               exit_code=1
             }
           
             cd ${PWD}
           done
           
-          echo -e "exit_code=${exit_code} \n\n" | tee -a ${TERRAFORM_VALIDATE_RESULT_FILE}
+          echo -e "exit_code=${exit_code} \n\n"
+          echo -e "exit_code=${exit_code} \n\n" >> ${TERRAFORM_VALIDATE_RESULT_FILE}
+          
           cat ${TERRAFORM_VALIDATE_RESULT_FILE}
           exit $exit_code
         continue-on-error: true
