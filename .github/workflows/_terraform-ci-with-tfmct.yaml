@@ -193,6 +193,8 @@ jobs:
             }
           
             cd ${PWD}
+            
+            sleep 1
           done
           
           echo -e "exit_code=${exit_code} \n\n"
