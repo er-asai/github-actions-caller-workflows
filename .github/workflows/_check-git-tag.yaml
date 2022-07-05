@@ -1,0 +1,67 @@
+name: check git tag
+on:
+  workflow_call:
+    inputs:
+      aws-region:
+        description: AWSのリージョン名
+        type: string
+        default: ap-northeast-1
+        required: false
+      github-ref:
+        description: GitHub Ref
+        type: string
+        required: true
+      github-pull-request-html-url:
+        description: GitHub Pull Request HTML URL
+        type: string
+        required: true
+    secrets:
+      github-token:
+        description: GitHubトークン
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check_git_tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: clone repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: extract version
+        id: version
+        run: |
+          LOG_FILE=diff_log
+          
+          NEWTAG=$(grep -E "v[0-9].[0-9].[0-9]" CHANGELOG.md | sed -r 's/^.*(v[0-9].[0-9].[0-9]).*$/\1/' | sort -r | head -1)
+          echo -e "NEW_TAG=${NEWTAG}" | tee ${LOG_FILE}
+
+          PRETAG=$(git tag | sort -r | head -1)
+          echo -e "PRE_TAG=${PRETAG}" | tee -a ${LOG_FILE}
+          
+          echo -e "\n\n" | tee -a ${LOG_FILE}
+          
+          echo -e "[CHANGE DIFF]" | tee -a ${LOG_FILE}
+          git diff $PRETAG..${{ github.sha }} -- CHANGELOG.md | grep -E '^\+' | grep -v '+++' | sed -e 's/^\+//g' | tee diff-log
+          
+          echo -e "\n\n" | tee -a ${LOG_FILE}
+          
+          echo -e "[COMMIT LOG]" | tee -a ${LOG_FILE}
+          git log $PRETAG..${{ github.sha }} --oneline | tee -a ${LOG_FILE}
+          
+          echo ::set-output name=newtag::$NEWTAG
+
+      - name:  PR Comments
+        id: tf-validate-pr-comments
+        run: |
+          MESSAGE_FILE=pull_request_comment_message
+          cat diff_log | tee -a ${MESSAGE_FILE}
+          gh pr comment -F ./${MESSAGE_FILE} "${URL}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}
+          URL: ${{ inputs.github-pull-request-html-url }}
