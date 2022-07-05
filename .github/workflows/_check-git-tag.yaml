@@ -41,17 +41,22 @@ jobs:
           echo -e "NEW_TAG=${NEWTAG}" | tee ${LOG_FILE}
 
           PRETAG=$(git tag | sort -r | head -1)
-          echo -e "PRE_TAG=${PRETAG}" | tee -a ${LOG_FILE}
           
-          echo -e "\n\n" | tee -a ${LOG_FILE}
+          if [ -z ${PRETAG}]; then
+            echo -e "No PRETAG." | tee -a ${LOG_FILE}
+          else
+            echo -e "PRE_TAG=${PRETAG}" | tee -a ${LOG_FILE}
           
-          echo -e "[CHANGE DIFF]" | tee -a ${LOG_FILE}
-          git diff $PRETAG..${{ inputs.github-sha }} -- ${{ inputs.version-history-file }} | grep -E '^\+' | grep -v '+++' | sed -e 's/^\+//g' | tee -a ${LOG_FILE}
+            echo -e "\n\n" | tee -a ${LOG_FILE}
           
-          echo -e "\n\n" | tee -a ${LOG_FILE}
+            echo -e "[CHANGE DIFF]" | tee -a ${LOG_FILE}
+            git diff $PRETAG..${{ inputs.github-sha }} -- ${{ inputs.version-history-file }} | grep -E '^\+' | grep -v '+++' | sed -e 's/^\+//g' | tee -a ${LOG_FILE}
           
-          echo -e "[COMMIT LOG]" | tee -a ${LOG_FILE}
-          git log $PRETAG..${{ inputs.github-sha }} --oneline | tee -a ${LOG_FILE}
+            echo -e "\n\n" | tee -a ${LOG_FILE}
+          
+            echo -e "[COMMIT LOG]" | tee -a ${LOG_FILE}
+            git log $PRETAG..${{ inputs.github-sha }} --oneline | tee -a ${LOG_FILE}
+          fi
           
           echo ::set-output name=newtag::$NEWTAG
 
