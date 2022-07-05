@@ -6,8 +6,8 @@ on:
         description: バージョン情報が記載されたファイルへのパス
         type: string
         required: true
-      github-ref:
-        description: GitHub Ref
+      github-sha:
+        description: GitHub SHA
         type: string
         required: true
       github-pull-request-html-url:
@@ -35,9 +35,9 @@ jobs:
       - name: extract version
         id: version
         run: |
-          LOG_FILE=diff_log
+          LOG_FILE=git_log
           
-          NEWTAG=$(grep -E "v[0-9].[0-9].[0-9]" CHANGELOG.md | sed -r 's/^.*(v[0-9].[0-9].[0-9]).*$/\1/' | sort -r | head -1)
+          NEWTAG=$(grep -E "v[0-9].[0-9].[0-9]" ${{ inputs.version-history-file }} | sed -r 's/^.*(v[0-9].[0-9].[0-9]).*$/\1/' | sort -r | head -1)
           echo -e "NEW_TAG=${NEWTAG}" | tee ${LOG_FILE}
 
           PRETAG=$(git tag | sort -r | head -1)
@@ -46,20 +46,20 @@ jobs:
           echo -e "\n\n" | tee -a ${LOG_FILE}
           
           echo -e "[CHANGE DIFF]" | tee -a ${LOG_FILE}
-          git diff $PRETAG..${{ github.sha }} -- CHANGELOG.md | grep -E '^\+' | grep -v '+++' | sed -e 's/^\+//g' | tee diff-log
+          git diff $PRETAG..${{ inputs.github-sha }} -- ${{ inputs.version-history-file }} | grep -E '^\+' | grep -v '+++' | sed -e 's/^\+//g' | tee -a ${LOG_FILE}
           
           echo -e "\n\n" | tee -a ${LOG_FILE}
           
           echo -e "[COMMIT LOG]" | tee -a ${LOG_FILE}
-          git log $PRETAG..${{ github.sha }} --oneline | tee -a ${LOG_FILE}
+          git log $PRETAG..${{ inputs.github-sha }} --oneline | tee -a ${LOG_FILE}
           
           echo ::set-output name=newtag::$NEWTAG
 
-      - name:  PR Comments
-        id: tf-validate-pr-comments
+      - name:  Check Git diff and log PR Comments
+        id: check-git-diff-and-log-comments
         run: |
           MESSAGE_FILE=pull_request_comment_message
-          cat diff_log | tee -a ${MESSAGE_FILE}
+          cat git_log | tee -a ${MESSAGE_FILE}
           gh pr comment -F ./${MESSAGE_FILE} "${URL}"
         env:
           GITHUB_TOKEN: ${{ secrets.github-token }}
