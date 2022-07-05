@@ -49,12 +49,12 @@ jobs:
           
             echo -e "\n\n" | tee -a ${LOG_FILE}
           
-            echo -e "[CHANGE DIFF]" | tee -a ${LOG_FILE}
+            echo -e "[CHANGE DIFF] (↓バージョン履歴ファイルの変更内容)" | tee -a ${LOG_FILE}
             git diff $PRETAG..${{ inputs.github-sha }} -- ${{ inputs.version-history-file }} | grep -E '^\+' | grep -v '+++' | sed -e 's/^\+//g' | tee -a ${LOG_FILE}
           
             echo -e "\n\n" | tee -a ${LOG_FILE}
           
-            echo -e "[COMMIT LOG]" | tee -a ${LOG_FILE}
+            echo -e "[COMMIT LOG] (↓前回タグの差分コミット内容)" | tee -a ${LOG_FILE}
             git log $PRETAG..${{ inputs.github-sha }} --oneline | tee -a ${LOG_FILE}
           fi
           
