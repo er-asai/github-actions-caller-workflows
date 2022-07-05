@@ -36,25 +36,29 @@ jobs:
         id: version
         run: |
           LOG_FILE=git_log
-          
+
+          echo -e "## タグ情報" | tee -a ${LOG_FILE}
+
           NEWTAG=$(grep -E "v[0-9].[0-9].[0-9]" ${{ inputs.version-history-file }} | sed -r 's/^.*(v[0-9].[0-9].[0-9]).*$/\1/' | sort -r | head -1)
-          echo -e "NEW_TAG=${NEWTAG}" | tee ${LOG_FILE}
+          echo -e "NEW_TAG= **${NEWTAG}** " | tee -a ${LOG_FILE}
 
           PRETAG=$(git tag | sort -r | head -1)
           
           if [ -z ${PRETAG}]; then
             echo -e "No PRETAG." | tee -a ${LOG_FILE}
           else
-            echo -e "PRE_TAG=${PRETAG}" | tee -a ${LOG_FILE}
+            echo -e "PRE_TAG= **${PRETAG}** " | tee -a ${LOG_FILE}
           
             echo -e "\n\n" | tee -a ${LOG_FILE}
           
-            echo -e "[CHANGE DIFF] (↓バージョン履歴ファイルの変更内容)" | tee -a ${LOG_FILE}
+            echo -e "## [CHANGE DIFF] (↓バージョン履歴ファイルの変更内容)" | tee -a ${LOG_FILE}
+            echo -e "```" | tee -a ${LOG_FILE}
             git diff $PRETAG..${{ inputs.github-sha }} -- ${{ inputs.version-history-file }} | grep -E '^\+' | grep -v '+++' | sed -e 's/^\+//g' | tee -a ${LOG_FILE}
-          
+            echo -e "```" | tee -a ${LOG_FILE}
+
             echo -e "\n\n" | tee -a ${LOG_FILE}
           
-            echo -e "[COMMIT LOG] (↓前回タグからの差分コミット内容)" | tee -a ${LOG_FILE}
+            echo -e "## [COMMIT LOG] (↓前回タグからの差分コミット内容)" | tee -a ${LOG_FILE}
             git log $PRETAG..${{ inputs.github-sha }} --oneline | tee -a ${LOG_FILE}
           fi
           
