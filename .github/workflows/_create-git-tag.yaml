@@ -6,10 +6,6 @@ on:
         description: バージョン情報が記載されたファイルへのパス
         type: string
         required: true
-      github-sha:
-        description: GitHub SHA
-        type: string
-        required: true
 
 jobs:
   create_git_tag:
