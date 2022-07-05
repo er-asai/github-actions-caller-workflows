@@ -54,7 +54,7 @@ jobs:
           
             echo -e "\n\n" | tee -a ${LOG_FILE}
           
-            echo -e "[COMMIT LOG] (↓前回タグの差分コミット内容)" | tee -a ${LOG_FILE}
+            echo -e "[COMMIT LOG] (↓前回タグからの差分コミット内容)" | tee -a ${LOG_FILE}
             git log $PRETAG..${{ inputs.github-sha }} --oneline | tee -a ${LOG_FILE}
           fi
           
