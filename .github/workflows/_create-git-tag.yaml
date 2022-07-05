@@ -1,0 +1,34 @@
+name: create git tag
+on:
+  workflow_call:
+    inputs:
+      version-history-file:
+        description: バージョン情報が記載されたファイルへのパス
+        type: string
+        required: true
+      github-sha:
+        description: GitHub SHA
+        type: string
+        required: true
+
+jobs:
+  create_git_tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: clone repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: extract version
+        id: version
+        run: |
+          NEWTAG=$(grep -E "v[0-9].[0-9].[0-9]" ${{ inputs.version-history-file }} | sed -r 's/^.*(v[0-9].[0-9].[0-9]).*$/\1/' | sort -r | head -1)
+          echo -e "NEW_TAG= ${NEWTAG}"
+          echo ::set-output name=newtag::$NEWTAG
+
+      - name:  create git tag
+        id: git-tag
+        run: |
+          git tag ${{ steps.version.outputs.newtag }}
+          git push origin ${{ steps.version.outputs.newtag }}
