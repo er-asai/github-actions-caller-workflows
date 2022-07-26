@@ -248,6 +248,7 @@ jobs:
 
       - name: Snyk IaC Test
         id: snyk-iac-test
+        working-directory: ${{ inputs.terraform-init-dir }}
         run: |
           if [ ${{ inputs.snyk-iac-test-option }} = "off" ]; then
             snyk iac test 2>&1 | tee -a snyk_test_result
@@ -262,7 +263,7 @@ jobs:
         id: github-pr-comments
         run: |
           MESSAGE_FILE_NAME=pull_request_comment_message
-          echo -e "[Snyk Container Test]\n\n" | tee -a ${MESSAGE_FILE_NAME}
+          echo -e "[Snyk IaC Test]\n\n" | tee ${MESSAGE_FILE_NAME}
           cat snyk_test_result >> ${MESSAGE_FILE_NAME}
           
           : # Snykのテスト結果がカラー表示されるため、そのままプルリクエストにコメントすると文字化けのようになる。
