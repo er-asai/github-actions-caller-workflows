@@ -120,6 +120,13 @@ jobs:
 #           sudo mv /tmp/terraform /usr/local/bin/terraform
 #           terraform -v
 
+
+      - name: Terraform Version
+        id: terraform-v
+        run: |
+          which terraform
+          terraform -v
+
       - name: setup reviewdog
         uses: reviewdog/action-setup@v1
         with:
