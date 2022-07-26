@@ -111,7 +111,9 @@ jobs:
 
       - name: setup terraform
         run: |
-          which terraform
+          sudo rm -f /tmp/terraform.zip
+          sudo rm -f /usr/local/bin/terraform
+          
           curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > /tmp/terraform.zip
           unzip /tmp/terraform.zip
           chmod +x /tmp/terraform
