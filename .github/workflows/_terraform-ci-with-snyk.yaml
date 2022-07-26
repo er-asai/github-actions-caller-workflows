@@ -104,21 +104,22 @@ jobs:
         id: checkout
         run: git checkout ${{ inputs.git-checkout-ref }}
 
-      - name: setup terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: ${{ inputs.terraform-version }}
-
 #       - name: setup terraform
-#         run: |
-#           sudo rm -f /tmp/terraform.zip
-#           sudo rm -f /usr/local/bin/terraform
+#         uses: hashicorp/setup-terraform@v2
+#         with:
+#           terraform_version: ${{ inputs.terraform-version }}
+
+      - name: setup terraform
+        run: |
+          ls -la /tmp
+          sudo rm -rf /tmp/terraform*
+          sudo rm -f /usr/local/bin/terraform
           
-#           curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > /tmp/terraform.zip
-#           unzip /tmp/terraform.zip
-#           chmod +x /tmp/terraform
-#           sudo mv /tmp/terraform /usr/local/bin/terraform
-#           terraform -v
+          curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > /tmp/terraform.zip
+          unzip /tmp/terraform.zip
+          chmod +x /tmp/terraform
+          sudo mv /tmp/terraform /usr/local/bin/terraform
+          terraform -v
 
 
       - name: Terraform Version
