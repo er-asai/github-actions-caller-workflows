@@ -166,7 +166,7 @@ jobs:
         id: init
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          if [ ${{ inputs.terraform-init-option }} = "off" ]; then
+          if [ "${{ inputs.terraform-init-option }}" = "off" ]; then
             terraform init
           else
             terraform init ${{ inputs.terraform-init-option }}
@@ -228,7 +228,7 @@ jobs:
         id: plan
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          if [ ${{ inputs.terraform-plan-option }} = "off" ]; then
+          if [ "${{ inputs.terraform-plan-option }}" = "off" ]; then
             tfcmt plan -- terraform plan
           else
             tfcmt plan -- terraform plan ${{ inputs.terraform-plan-option }}
@@ -240,7 +240,7 @@ jobs:
         id: show
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          if [ ${{ inputs.terraform-show-option }} = "off" ]; then
+          if [ "${{ inputs.terraform-show-option }}" = "off" ]; then
             terraform show
           else
             terraform show ${{ inputs.terraform-show-option }}
@@ -250,7 +250,7 @@ jobs:
         id: snyk-iac-test
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          if [ ${{ inputs.snyk-iac-test-option }} = "off" ]; then
+          if [ "${{ inputs.snyk-iac-test-option }}" = "off" ]; then
             snyk iac test 2>&1 | tee -a snyk_test_result
           else
             snyk iac test ${{ inputs.snyk-iac-test-option }} 2>&1 | tee -a snyk_test_result
