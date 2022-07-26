@@ -225,7 +225,7 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.github-token }}
 
       - name: terraform plan with tfcmt
-        id: plan
+        id: plan-tfcmt
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
           if [ "${{ inputs.terraform-plan-option }}" = "off" ]; then
@@ -235,6 +235,16 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.github-token }}
+
+      - name: terraform plan
+        id: plan
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ "${{ inputs.terraform-plan-option }}" = "off" ]; then
+            terraform plan
+          else
+            terraform plan ${{ inputs.terraform-plan-option }}
+          fi
 
       - name: terraform show
         id: show
@@ -261,8 +271,9 @@ jobs:
           SNYK_TOKEN: ${{ secrets.snyk-token }}
         continue-on-error: true
 
-      - name: GitHub PR Comments
-        id: github-pr-comments
+      - name: Snyk IaC Test PR Comments
+        id: snyk-iac-test-pr-comments
+        working-directory: ${{ inputs.terraform-init-dir }}
         run: |
           MESSAGE_FILE_NAME=pull_request_comment_message
           echo -e "[Snyk IaC Test]\n\n" | tee ${MESSAGE_FILE_NAME}
