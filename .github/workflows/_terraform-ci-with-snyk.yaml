@@ -104,10 +104,18 @@ jobs:
         id: checkout
         run: git checkout ${{ inputs.git-checkout-ref }}
 
+#       - name: setup terraform
+#         uses: hashicorp/setup-terraform@v2
+#         with:
+#           terraform_version: ${{ inputs.terraform-version }}
+
       - name: setup terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: ${{ inputs.terraform-version }}
+        run: |
+          curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > terraform.zip
+          unzip terraform.zip
+          chmod +x ./terraform
+          sudo mv ./terraform /usr/local/bin/terraform
+          terraform -v
 
       - name: setup reviewdog
         uses: reviewdog/action-setup@v1
