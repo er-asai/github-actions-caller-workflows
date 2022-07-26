@@ -112,11 +112,18 @@ jobs:
       - name: setup terraform
         run: |
           ls -la /tmp
+          ls -la /usr/local/bin/
+          rm -f $(which terraform)
+          ls -la /usr/local/bin/
           
           curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > /tmp/terraform.zip
+          ls -la /tmp
           echo "aa"
-          unzip /tmp/terraform.zip
+          
+          unzip /tmp/terraform.zip -d /usr/local/bin/
           echo "bb"
+          ls -la /usr/local/bin/
+          
           chmod +x /tmp/terraform
           echo "cc"
           sudo mv /tmp/terraform /usr/local/bin/terraform
