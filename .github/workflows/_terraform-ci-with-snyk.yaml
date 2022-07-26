@@ -104,21 +104,21 @@ jobs:
         id: checkout
         run: git checkout ${{ inputs.git-checkout-ref }}
 
-#       - name: setup terraform
-#         uses: hashicorp/setup-terraform@v2
-#         with:
-#           terraform_version: ${{ inputs.terraform-version }}
-
       - name: setup terraform
-        run: |
-          sudo rm -f /tmp/terraform.zip
-          sudo rm -f /usr/local/bin/terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ inputs.terraform-version }}
+
+#       - name: setup terraform
+#         run: |
+#           sudo rm -f /tmp/terraform.zip
+#           sudo rm -f /usr/local/bin/terraform
           
-          curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > /tmp/terraform.zip
-          unzip /tmp/terraform.zip
-          chmod +x /tmp/terraform
-          sudo mv /tmp/terraform /usr/local/bin/terraform
-          terraform -v
+#           curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > /tmp/terraform.zip
+#           unzip /tmp/terraform.zip
+#           chmod +x /tmp/terraform
+#           sudo mv /tmp/terraform /usr/local/bin/terraform
+#           terraform -v
 
       - name: setup reviewdog
         uses: reviewdog/action-setup@v1
@@ -142,6 +142,10 @@ jobs:
         id: snyk
         uses: snyk/actions/setup@master
 
+      - name: Snyk Version
+        id: snyk-v
+        run: snyk -v
+        
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
