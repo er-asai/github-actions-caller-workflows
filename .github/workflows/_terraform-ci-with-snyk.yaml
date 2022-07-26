@@ -111,6 +111,7 @@ jobs:
 
       - name: setup terraform
         run: |
+          which terraform
           curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > /tmp/terraform.zip
           unzip /tmp/terraform.zip
           chmod +x /tmp/terraform
@@ -129,7 +130,6 @@ jobs:
 
       - name: setup tfcmt
         run: |
-          which terraform
           wget https://github.com/suzuki-shunsuke/tfcmt/releases/download/v${{ inputs.tfcmt-version }}/tfcmt_linux_amd64.tar.gz
           tar -zxvf tfcmt_linux_amd64.tar.gz
           chmod +x ./tfcmt
