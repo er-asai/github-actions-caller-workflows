@@ -124,12 +124,9 @@ jobs:
           echo "bb"
           ls -la /usr/local/bin/
           
-          chmod +x /tmp/terraform
+          chmod +x /usr/local/bin/terraform
           echo "cc"
-          sudo mv /tmp/terraform /usr/local/bin/terraform
-          echo "dd"
           terraform -v
-
 
       - name: Terraform Version
         id: terraform-v
