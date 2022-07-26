@@ -133,7 +133,7 @@ jobs:
           wget https://github.com/suzuki-shunsuke/tfcmt/releases/download/v${{ inputs.tfcmt-version }}/tfcmt_linux_amd64.tar.gz
           tar -zxvf tfcmt_linux_amd64.tar.gz
           chmod +x ./tfcmt
-          sudo mv ./tfcmt /usr/local/bin/tfcmt
+          sudo mv -f ./tfcmt /usr/local/bin/tfcmt
           tfcmt -v
 
       - name: Snyk Setup
