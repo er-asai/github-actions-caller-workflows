@@ -141,6 +141,8 @@ jobs:
       - name: Snyk Setup
         id: snyk
         uses: snyk/actions/setup@master
+        with:
+          snyk-version: v1.927.0
 
       - name: Snyk Version
         id: snyk-v
