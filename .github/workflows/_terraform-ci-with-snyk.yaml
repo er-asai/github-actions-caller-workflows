@@ -250,6 +250,8 @@ jobs:
         id: snyk-iac-test
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
+          ls -la
+          cat terraform-dev.json
           if [ "${{ inputs.snyk-iac-test-option }}" = "off" ]; then
             snyk iac test 2>&1 | tee -a snyk_test_result
           else
