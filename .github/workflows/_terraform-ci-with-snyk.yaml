@@ -95,6 +95,7 @@ jobs:
 
     steps:
       - name: clone repository
+        id: clone
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -104,47 +105,41 @@ jobs:
         id: checkout
         run: git checkout ${{ inputs.git-checkout-ref }}
 
-#       - name: setup terraform
-#         uses: hashicorp/setup-terraform@v2
-#         with:
-#           terraform_version: ${{ inputs.terraform-version }}
-
       - name: setup terraform
+        id: setup-terraform
         run: |
-          ls -la /tmp
-          ls -la /usr/local/bin/
+          : # デフォルトでインストールされているterraformを削除
           rm -f $(which terraform)
-          ls -la /usr/local/bin/
           
+          : # setup terraform
           curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > /tmp/terraform.zip
-          ls -la /tmp
-          echo "aa"
-          
           unzip /tmp/terraform.zip -d /usr/local/bin/
-          echo "bb"
-          ls -la /usr/local/bin/
-          
           chmod +x /usr/local/bin/terraform
-          echo "cc"
-          terraform -v
-
-      - name: Terraform Version
-        id: terraform-v
-        run: |
           which terraform
           terraform -v
 
       - name: setup reviewdog
+        id: setup-reviewdog
         uses: reviewdog/action-setup@v1
         with:
           reviewdog_version: v${{ inputs.reviewdog-version }}
 
+      - name: reviewdog Version
+        id: reviewdog-version
+        run: reviewdog version
+        
       - name: setup tflint
+        id: setup-tflint
         uses: terraform-linters/setup-tflint@v1
         with:
           tflint_version: v${{ inputs.tflint-version }}
 
+      - name: tflint Version
+        id: tflint-version
+        run: tflint version
+        
       - name: setup tfcmt
+        id: setup-tfcmt
         run: |
           wget https://github.com/suzuki-shunsuke/tfcmt/releases/download/v${{ inputs.tfcmt-version }}/tfcmt_linux_amd64.tar.gz
           tar -zxvf tfcmt_linux_amd64.tar.gz
@@ -153,23 +148,22 @@ jobs:
           tfcmt -v
 
       - name: Snyk Setup
-        id: snyk
+        id: setup-snyk
         uses: snyk/actions/setup@master
-        with:
-          snyk-version: v1.927.0
 
       - name: Snyk Version
-        id: snyk-v
+        id: snyk-version
         run: snyk -v
         
       - name: configure aws credentials
+        id: config-aws
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: ${{ secrets.aws-assume-role-arn }}
           aws-region: ${{ inputs.aws-region }}
 
       - name: terraform fmt
-        id: fmt
+        id: tf-fmt
         run: terraform fmt -recursive -diff=true -check=true 2>&1 | tee -a terraform_fmt_result
         continue-on-error: true
 
@@ -194,7 +188,7 @@ jobs:
           URL: ${{ inputs.github-pull-request-html-url }}
 
       - name: terraform init
-        id: init
+        id: tf-init
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
           if [ "${{ inputs.terraform-init-option }}" = "off" ]; then
@@ -209,7 +203,7 @@ jobs:
         run: terraform workspace select ${{ inputs.terraform-workspace-name }} || terraform workspace new ${{ inputs.terraform-workspace-name }}
 
       - name: terraform validate
-        id: validate
+        id: tf-validate
         run: |
           TERRAFORM_DIR=${{ inputs.terraform-root-dir }}
           TERRAFORM_VALIDATE_RESULT_FILE=terraform_validate_result
@@ -255,30 +249,30 @@ jobs:
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.github-token }}
 
-#       - name: terraform plan with tfcmt
-#         id: plan-tfcmt
-#         working-directory: ${{ inputs.terraform-init-dir }}
-#         run: |
-#           if [ "${{ inputs.terraform-plan-option }}" = "off" ]; then
-#             tfcmt plan -- terraform plan
-#           else
-#             tfcmt plan -- terraform plan ${{ inputs.terraform-plan-option }}
-#           fi
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.github-token }}
-
-      - name: terraform plan
-        id: plan
+      - name: terraform plan with tfcmt
+        id: tf-plan-tfcmt
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
           if [ "${{ inputs.terraform-plan-option }}" = "off" ]; then
-            terraform plan
+            tfcmt plan -- terraform plan
           else
-            terraform plan ${{ inputs.terraform-plan-option }}
+            tfcmt plan -- terraform plan ${{ inputs.terraform-plan-option }}
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}
+
+#       - name: terraform plan
+#         id: tf-plan
+#         working-directory: ${{ inputs.terraform-init-dir }}
+#         run: |
+#           if [ "${{ inputs.terraform-plan-option }}" = "off" ]; then
+#             terraform plan
+#           else
+#             terraform plan ${{ inputs.terraform-plan-option }}
+#           fi
 
       - name: terraform show
-        id: show
+        id: tf-show
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
           if [ "${{ inputs.terraform-show-option }}" = "off" ]; then
