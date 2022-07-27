@@ -126,7 +126,7 @@ jobs:
 
       - name: reviewdog Version
         id: reviewdog-version
-        run: reviewdog version
+        run: reviewdog -v
         
       - name: setup tflint
         id: setup-tflint
@@ -136,7 +136,7 @@ jobs:
 
       - name: tflint Version
         id: tflint-version
-        run: tflint version
+        run: tflint -v
         
       - name: setup tfcmt
         id: setup-tfcmt
