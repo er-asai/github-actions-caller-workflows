@@ -126,7 +126,7 @@ jobs:
 
       - name: reviewdog Version
         id: reviewdog-version
-        run: reviewdog -v
+        run: reviewdog -version
         
       - name: setup tflint
         id: setup-tflint
