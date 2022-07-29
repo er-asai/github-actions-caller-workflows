@@ -254,29 +254,19 @@ jobs:
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
           if [ "${{ inputs.terraform-plan-option }}" = "off" ]; then
-            tfcmt plan -- terraform plan
+            tfcmt plan -- terraform plan -no-color -out=tf.plan
           else
             tfcmt plan -- terraform plan ${{ inputs.terraform-plan-option }}
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.github-token }}
 
-#       - name: terraform plan
-#         id: tf-plan
-#         working-directory: ${{ inputs.terraform-init-dir }}
-#         run: |
-#           if [ "${{ inputs.terraform-plan-option }}" = "off" ]; then
-#             terraform plan
-#           else
-#             terraform plan ${{ inputs.terraform-plan-option }}
-#           fi
-
       - name: terraform show
         id: tf-show
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
           if [ "${{ inputs.terraform-show-option }}" = "off" ]; then
-            terraform show
+            terraform show -json tf.plan > tf-plan.json
           else
             terraform show ${{ inputs.terraform-show-option }}
           fi
@@ -285,9 +275,8 @@ jobs:
         id: snyk-iac-test
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          ls -la
           if [ "${{ inputs.snyk-iac-test-option }}" = "off" ]; then
-            snyk iac test 2>&1 | tee -a snyk_test_result
+            snyk iac test test tf-plan.json --scan=planned-values 2>&1 | tee -a snyk_test_result
           else
             snyk iac test ${{ inputs.snyk-iac-test-option }} 2>&1 | tee -a snyk_test_result
           fi
