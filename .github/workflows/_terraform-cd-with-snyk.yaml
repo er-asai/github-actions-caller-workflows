@@ -1,0 +1,168 @@
+name: terraform cd with snyk
+on:
+  workflow_call:
+    inputs:
+      aws-region:
+        description: AWSのリージョン名
+        type: string
+        default: ap-northeast-1
+        required: false
+      terraform-root-dir:
+        description: Terraformコードが格納されているルートディレクトリ
+        type: string
+        required: true
+      terraform-init-dir:
+        description: terraform init を実行するディレクトリ
+        type: string
+        required: true
+      terraform-init-option:
+        description: terraform init のオプションを指定
+        type: string
+        default: off
+        required: false
+      terraform-workspace-name:
+        description: terraform workspace名
+        type: string
+        default: default
+        required: false
+      terraform-plan-option:
+        description: terraform plan のオプションを指定
+        type: string
+        default: off
+        required: false
+      terraform-apply-option:
+        description: terraform apply のオプションを指定
+        type: string
+        default: off
+        required: false
+      terraform-version:
+        description: terraformの実行バージョン
+        type: string
+        default: 1.1.9
+        required: false
+      git-checkout-ref:
+        description: リポジトリをチェックアウトするときのブランチ、タグもしくはSHA
+        type: string
+        default: ""
+        required: false
+      snyk-iac-test-option:
+        description: snyk iac test のオプションを指定
+        type: string
+        default: off
+        required: false
+    secrets:
+      aws-assume-role-arn:
+        description: role to assume
+        required: true
+      snyk-token:
+        description: Snykトークン
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform-cd:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - name: clone repository
+        id: clone
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - if: ${{ inputs.git-checkout-ref != '' }} # <= ref が指定されていたら git checkout する
+        name: git checkout
+        id: checkout
+        run: git checkout ${{ inputs.git-checkout-ref }}
+
+      - name: setup terraform
+        id: setup-terraform
+        run: |
+          : # デフォルトでインストールされているterraformを削除
+          rm -f $(which terraform)
+          
+          : # setup terraform
+          curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > /tmp/terraform.zip
+          unzip /tmp/terraform.zip -d /usr/local/bin/
+          chmod +x /usr/local/bin/terraform
+          which terraform
+          terraform -v
+
+      - name: Snyk Setup
+        id: setup-snyk
+        uses: snyk/actions/setup@master
+
+      - name: Snyk Version
+        id: snyk-version
+        run: snyk -v
+
+      - name: configure aws credentials
+        id: config-aws
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.aws-assume-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: terraform init
+        id: tf-init
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ ${{ inputs.terraform-init-option }} = "off" ]; then
+            terraform init
+          else
+            terraform init ${{ inputs.terraform-init-option }}
+          fi
+
+      - name: terraform workspace
+        id: tf-workspace
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: terraform workspace select ${{ inputs.terraform-workspace-name }} || terraform workspace new ${{ inputs.terraform-workspace-name }}
+
+      - name: terraform plan
+        id: tf-plan
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ ${{ inputs.terraform-plan-option }} = "off" ]; then
+            terraform plan -no-color -out=tf.plan
+          else
+            terraform plan ${{ inputs.terraform-plan-option }}
+          fi
+
+      - name: terraform apply
+        id: tf-apply
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ ${{ inputs.terraform-apply-option }} = "off" ]; then
+            terraform apply -input=false --auto-approve tf.plan
+          else
+            terraform apply ${{ inputs.terraform-apply-option }}
+          fi
+
+      - name: terraform show
+        id: tf-show
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ "${{ inputs.terraform-show-option }}" = "off" ]; then
+            terraform show -json tf.plan > tf-plan.json
+          else
+            terraform show ${{ inputs.terraform-show-option }}
+          fi
+
+      - name: Snyk IaC Test Report
+        id: snyk-iac-test-report
+        working-directory: ${{ inputs.terraform-init-dir }}
+        run: |
+          if [ "${{ inputs.snyk-iac-test-option }}" = "off" ]; then
+            snyk iac test tf-plan.json --scan=planned-values --report
+          else
+            snyk iac test ${{ inputs.snyk-iac-test-option }}
+          fi
+        env:
+          SNYK_TOKEN: ${{ secrets.snyk-token }}
