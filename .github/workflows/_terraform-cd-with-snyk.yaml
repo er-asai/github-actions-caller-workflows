@@ -30,6 +30,11 @@ on:
         type: string
         default: off
         required: false
+      terraform-show-option:
+        description: terraform show のオプションを指定
+        type: string
+        default: off
+        required: false
       terraform-apply-option:
         description: terraform apply のオプションを指定
         type: string
