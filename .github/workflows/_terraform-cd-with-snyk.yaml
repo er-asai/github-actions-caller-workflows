@@ -119,7 +119,7 @@ jobs:
         id: tf-init
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          if [ ${{ inputs.terraform-init-option }} = "off" ]; then
+          if [ "${{ inputs.terraform-init-option }}" = "off" ]; then
             terraform init
           else
             terraform init ${{ inputs.terraform-init-option }}
@@ -134,7 +134,7 @@ jobs:
         id: tf-plan
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          if [ ${{ inputs.terraform-plan-option }} = "off" ]; then
+          if [ "${{ inputs.terraform-plan-option }}" = "off" ]; then
             terraform plan -no-color -out=tf.plan
           else
             terraform plan ${{ inputs.terraform-plan-option }}
@@ -144,7 +144,7 @@ jobs:
         id: tf-apply
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          if [ ${{ inputs.terraform-apply-option }} = "off" ]; then
+          if [ "${{ inputs.terraform-apply-option }}" = "off" ]; then
             terraform apply -input=false --auto-approve tf.plan
           else
             terraform apply ${{ inputs.terraform-apply-option }}
