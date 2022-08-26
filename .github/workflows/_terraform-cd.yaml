@@ -74,9 +74,17 @@ jobs:
         run: git checkout ${{ inputs.git-checkout-ref }}
 
       - name: setup terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: ${{ inputs.terraform-version }}
+        id: setup-terraform
+        run: |
+          : # デフォルトでインストールされているterraformを削除
+          rm -f $(which terraform)
+          
+          : # setup terraform
+          curl -sL https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_amd64.zip > /tmp/terraform.zip
+          unzip /tmp/terraform.zip -d /usr/local/bin/
+          chmod +x /usr/local/bin/terraform
+          which terraform
+          terraform -v
 
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -88,7 +96,7 @@ jobs:
         id: init
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          if [ ${{ inputs.terraform-init-option }} = "off" ]; then
+          if [ "${{ inputs.terraform-init-option }}" = "off" ]; then
             terraform init
           else
             terraform init ${{ inputs.terraform-init-option }}
@@ -103,8 +111,8 @@ jobs:
         id: plan
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          if [ ${{ inputs.terraform-plan-option }} = "off" ]; then
-            terraform plan
+          if [ "${{ inputs.terraform-plan-option }}" = "off" ]; then
+            terraform plan -no-color -out=tf.plan
           else
             terraform plan ${{ inputs.terraform-plan-option }}
           fi
@@ -113,8 +121,8 @@ jobs:
         id: apply
         working-directory: ${{ inputs.terraform-init-dir }}
         run: |
-          if [ ${{ inputs.terraform-apply-option }} = "off" ]; then
-            terraform apply
+          if [ "${{ inputs.terraform-apply-option }}" = "off" ]; then
+            terraform apply -input=false --auto-approve tf.plan
           else
             terraform apply ${{ inputs.terraform-apply-option }}
           fi
