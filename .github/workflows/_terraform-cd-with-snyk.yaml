@@ -171,3 +171,4 @@ jobs:
           fi
         env:
           SNYK_TOKEN: ${{ secrets.snyk-token }}
+        continue-on-error: true
