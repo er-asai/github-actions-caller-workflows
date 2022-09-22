@@ -33,7 +33,7 @@ jobs:
           newtag=$(grep -E "v[0-9].[0-9].[0-9]" ${{ inputs.version-history-file }} | sed -r 's/^.*(v[0-9].[0-9].[0-9]).*$/\1/' | sort -r | head -1)
           echo -e "NEW_TAG= ${newtag}"
           
-          if [ "${{ inputs.git-tag-suffix }}" != "off" ];
+          if [ "${{ inputs.git-tag-suffix }}" != "off" ]; then
             newtag="${newtag}-${{ inputs.git-tag-suffix }}"
           fi
 
