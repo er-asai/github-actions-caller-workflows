@@ -6,10 +6,21 @@ on:
         description: バージョン情報が記載されたファイルへのパス
         type: string
         required: true
+      git-tag-suffix:
+        description: git tagに付けるサフィックス
+        type: string
+        default: off
+        required: false
+    outputs:
+      git-tag-version:
+        description: "git tag version"
+        value: ${{ jobs.create_git_ta.outputs.git-tag-version }}  
 
 jobs:
   create_git_tag:
     runs-on: ubuntu-latest
+    outputs:
+      git-tag-version: ${{ steps.version.outputs.tag }}
     steps:
       - name: clone repository
         uses: actions/checkout@v3
@@ -19,9 +30,14 @@ jobs:
       - name: extract version
         id: version
         run: |
-          NEWTAG=$(grep -E "v[0-9].[0-9].[0-9]" ${{ inputs.version-history-file }} | sed -r 's/^.*(v[0-9].[0-9].[0-9]).*$/\1/' | sort -r | head -1)
-          echo -e "NEW_TAG= ${NEWTAG}"
-          echo ::set-output name=newtag::$NEWTAG
+          newtag=$(grep -E "v[0-9].[0-9].[0-9]" ${{ inputs.version-history-file }} | sed -r 's/^.*(v[0-9].[0-9].[0-9]).*$/\1/' | sort -r | head -1)
+          echo -e "NEW_TAG= ${newtag}"
+          
+          if [ "${{ inputs.git-tag-suffix }}" != "off" ];
+            newtag="${newtag}-${{ inputs.git-tag-suffix }}"
+          fi
+
+          echo ::set-output name=tag::$newtag
 
       - name:  create git tag
         id: git-tag
