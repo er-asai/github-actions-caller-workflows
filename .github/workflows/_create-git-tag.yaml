@@ -42,5 +42,5 @@ jobs:
       - name:  create git tag
         id: git-tag
         run: |
-          git tag ${{ steps.version.outputs.newtag }}
-          git push origin ${{ steps.version.outputs.newtag }}
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
