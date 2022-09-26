@@ -14,7 +14,7 @@ on:
     outputs:
       git-tag-version:
         description: "git tag version"
-        value: ${{ jobs.create_git_ta.outputs.git-tag-version }}  
+        value: ${{ jobs.create_git_tag.outputs.git-tag-version }}  
 
 jobs:
   create_git_tag:
