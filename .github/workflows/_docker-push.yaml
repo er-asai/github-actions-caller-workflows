@@ -75,8 +75,6 @@ jobs:
           key: ${{ inputs.github-ref }}-buildx-${{ inputs.docker-tag }}
           restore-keys: |
             ${{ inputs.github-ref }}-${{ inputs.docker-tag }}
-            ${{ inputs.github-ref }}
-            refs/head/master
 
       - if: ${{ env.aws_assume_role_arn != '' }} # secretsにAWSのAssumeRoleが設定されていたら実行
         name: configure aws credentials
