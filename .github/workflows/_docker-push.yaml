@@ -15,7 +15,7 @@ on:
         description: Docker Tag
         type: string
         required: true
-      docker-build-args-option:
+      docker-build-args-option: #複数の引数を渡すときは\nでつなぐ。e.g. "BASE_NODE_ENV=development\nBASE_RELEASE_VERSION=${{ github.sha }}"
         description: build-args のオプションを指定
         type: string
         default: off
