@@ -50,7 +50,7 @@ jobs:
 
           echo -e "## タグ情報" | tee -a ${LOG_FILE}
 
-          newtag=$(grep -E "v[0-9]{1,}.[0-9]{1,}.[0-9]{1,}" ${{ inputs.version-history-file }} | sed -r 's/^.*(v[0-9]{1,}.[0-9]{1,}.[0-9]{1,}).*$/\1/' | sort -t "." -k 1nr -k 2nr -k 3nr | head -1)
+          newtag=$(grep -E "v[0-9]{1,}.[0-9]{1,}.[0-9]{1,}" ${{ inputs.version-history-file }} | sed -r 's/^.*(v[0-9]{1,}.[0-9]{1,}.[0-9]{1,}).*$/\1/' | sort -Vr | head -1)
           
           if [ "${{ inputs.git-tag-suffix }}" != "off" ]; then
             newtag="${newtag}-${{ inputs.git-tag-suffix }}"
