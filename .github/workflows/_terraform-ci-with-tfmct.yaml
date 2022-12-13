@@ -62,7 +62,13 @@ on:
     secrets:
       aws-assume-role-arn:
         description: role to assume
-        required: true
+        required: false
+      gcp-workload-identity-provider:
+        description: gcp workload identity provider
+        required: false
+      gcp-service-account:
+        description: gcp service account
+        required: false
       github-token:
         description: GitHubトークン
         required: true
@@ -79,6 +85,12 @@ jobs:
     defaults:
       run:
         working-directory: .
+
+    # secretsの値は直接if条件に指摘できないため、環境変数にいったん入れる。
+    # https://docs.github.com/ja/actions/using-workflows/workflow-syntax-for-github-actions#example-using-secrets
+    env:
+      aws_assume_role_arn: ${{ secrets.aws-assume-role-arn }}
+      gcp_workload_identity_provider: ${{ secrets.gcp-workload-identity-provider }}
 
     steps:
       - name: clone repository
@@ -122,11 +134,20 @@ jobs:
           sudo mv ./tfcmt /usr/local/bin/tfcmt
           tfcmt -v
 
-      - name: configure aws credentials
+      - if: ${{ env.aws_assume_role_arn != '' }} # secretsにAWSのAssumeRoleが設定されていたら実行
+        name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: ${{ secrets.aws-assume-role-arn }}
           aws-region: ${{ inputs.aws-region }}
+
+      # ref. https://github.com/google-github-actions/auth
+      - if: ${{ env.gcp_workload_identity_provider != '' }} # secretsにGCPのWorkloadIdentityProviderが設定されていたら実行
+        name: authenticate to gcp
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: ${{ secrets.gcp-workload-identity-provider }}
+          service_account: ${{ secrets.gcp-service-account }}
 
       - name: terraform fmt
         id: fmt
