@@ -110,7 +110,7 @@ jobs:
 
       - name: configure aws credentials
         id: config-aws
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: ${{ secrets.aws-assume-role-arn }}
           aws-region: ${{ inputs.aws-region }}

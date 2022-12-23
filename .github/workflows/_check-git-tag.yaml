@@ -82,7 +82,7 @@ jobs:
             git log $pretag..${{ inputs.github-sha }} --oneline | tee -a ${LOG_FILE}
           fi
           
-          echo ::set-output name=tag::$newtag
+          echo "tag=${newtag}" >> $GITHUB_OUTPUT
 
       - name:  Check Git diff and log PR Comments
         id: check-git-diff-and-log-comments

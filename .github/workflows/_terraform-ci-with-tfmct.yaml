@@ -122,7 +122,7 @@ jobs:
           reviewdog_version: v${{ inputs.reviewdog-version }}
 
       - name: setup tflint
-        uses: terraform-linters/setup-tflint@v1
+        uses: terraform-linters/setup-tflint@v2
         with:
           tflint_version: v${{ inputs.tflint-version }}
 
@@ -136,7 +136,7 @@ jobs:
 
       - if: ${{ env.aws_assume_role_arn != '' }} # secretsにAWSのAssumeRoleが設定されていたら実行
         name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: ${{ secrets.aws-assume-role-arn }}
           aws-region: ${{ inputs.aws-region }}

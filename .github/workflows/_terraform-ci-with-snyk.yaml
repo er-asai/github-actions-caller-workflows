@@ -130,7 +130,7 @@ jobs:
         
       - name: setup tflint
         id: setup-tflint
-        uses: terraform-linters/setup-tflint@v1
+        uses: terraform-linters/setup-tflint@v2
         with:
           tflint_version: v${{ inputs.tflint-version }}
 
@@ -157,7 +157,7 @@ jobs:
         
       - name: configure aws credentials
         id: config-aws
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: ${{ secrets.aws-assume-role-arn }}
           aws-region: ${{ inputs.aws-region }}
