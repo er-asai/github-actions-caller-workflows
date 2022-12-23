@@ -130,7 +130,7 @@ jobs:
         
       - name: setup tflint
         id: setup-tflint
-        uses: terraform-linters/setup-tflint@v1
+        uses: terraform-linters/setup-tflint@v2
         with:
           tflint_version: v${{ inputs.tflint-version }}
 
