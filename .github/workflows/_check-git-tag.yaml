@@ -58,10 +58,10 @@ jobs:
           
           echo -e "NEW_TAG= **${newtag}** " | tee -a ${LOG_FILE}
 
-          pretag=$(git tag | sort -r | head -1)
+          pretag=$(git tag | sort -Vr | head -1)
           
           if [ "${{ inputs.git-tag-suffix }}" != "off" ]; then
-            pretag=$(git tag | sort -r | grep "${{ inputs.git-tag-suffix }}" | head -1)
+            pretag=$(git tag | sort -Vr | grep "${{ inputs.git-tag-suffix }}" | head -1)
           fi
 
           if [ -z ${pretag} ]; then
